@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "PropertyInsight",
+      "hasCanvas": false,
+      "bodyTextLen": 245,
+      "bodyTextHash": "4e141275e42cd550a0dacf7108d36704cbbed3de0dc1a490c0918b1fbb76b641",
+      "bodyTextPrefix": "PropertyInsight VIVELLA · Alter / Geofence off DossierNeighborho",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "PropertyInsight",
+      "hasCanvas": false,
+      "bodyTextLen": 245,
+      "bodyTextHash": "4e141275e42cd550a0dacf7108d36704cbbed3de0dc1a490c0918b1fbb76b641",
+      "bodyTextPrefix": "PropertyInsight VIVELLA · Alter / Geofence off DossierNeighborho",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

@@ -1,0 +1,47 @@
+# PropertyInsight - Development Docker setup
+# Use docker-compose.dev.yml for development with hot reloading
+
+version: '3.8'
+
+services:
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+      - "9229:9229"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/propertyinsight
+      - NODE_ENV=development
+      - XAI_API_KEY=${XAI_API_KEY}
+      - DEBUG=propertyinsight:*
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.output
+      - /app/dist
+    command: npm run dev
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=propertyinsight
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:

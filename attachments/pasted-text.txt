@@ -1,0 +1,911 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+// New Image Comparison Slider Component for the Alter Rendering Engine
+const ImageComparisonSlider = ({ before, after, isLoading }) => {
+    const [position, setPosition] = useState(50);
+    const sliderRef = useRef(null);
+
+    const handleMove = (event) => {
+        if (!sliderRef.current || (!before && !after)) return;
+        const rect = sliderRef.current.getBoundingClientRect();
+        let clientX = event.clientX;
+        
+        // Handle touch events
+        if (event.touches && event.touches.length > 0) {
+            clientX = event.touches[0].clientX;
+        }
+
+        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+        const percent = (x / rect.width) * 100;
+        setPosition(percent);
+    };
+
+    return (
+        <div className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden bg-gray-900 border-2 border-indigo-200 shadow-inner group touch-none"
+             onMouseMove={(e) => { if (e.buttons === 1) handleMove(e); }}
+             onMouseDown={handleMove}
+             onTouchMove={handleMove}
+        >
+            {/* Base state / Loading */}
+            {(!before && !after && !isLoading) && (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <p>Upload an image to start rendering</p>
+                </div>
+            )}
+            
+            {isLoading && !after && (
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-indigo-400 space-y-4">
+                     <svg className="animate-spin h-10 w-10 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="font-medium animate-pulse">Alter Rendering Engine Active...</p>
+                 </div>
+            )}
+
+            {/* Before Image (Background) */}
+            {before && (
+                <img src={before} alt="Before" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+            )}
+
+            {/* After Image (Foreground, Clipped) */}
+            {after && (
+                <div
+                    className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
+                    style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
+                >
+                    <img src={after} alt="After" className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none" style={{ maxWidth: 'none', width: '100%' }} />
+                </div>
+            )}
+
+            {/* Slider Handle */}
+            {before && after && (
+                <div
+                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center cursor-ew-resize"
+                    style={{ left: `${position}%` }}
+                >
+                    <div className="w-10 h-10 bg-white rounded-full shadow-xl flex items-center justify-center -ml-5 border-2 border-gray-200 text-gray-600 transition-transform group-hover:scale-110">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 8l-4 4 4 4m8-8l4 4-4 4"></path>
+                        </svg>
+                    </div>
+                </div>
+            )}
+            
+            {/* Labels */}
+            {before && after && (
+                <>
+                    <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-md text-sm font-semibold backdrop-blur-sm pointer-events-none">Before</div>
+                    <div className="absolute top-4 right-4 bg-indigo-600/80 text-white px-3 py-1 rounded-md text-sm font-semibold backdrop-blur-sm pointer-events-none">Alter Render</div>
+                </>
+            )}
+        </div>
+    );
+};
+
+// Main App component
+function App() {
+    const [beforeImage, setBeforeImage] = useState(null); // Stores the uploaded image data (base64)
+    const [afterImage, setAfterImage] = useState(null);   // Stores the generated 'after' image data (base64)
+    const [problemDescription, setProblemDescription] = useState(''); // User's input for the problem
+    const [industry, setIndustry] = useState('Garage Doors'); // Selected industry
+    const [marketingCopy, setMarketingCopy] = useState('');   // Generated marketing copy
+    const [estimatedROI, setEstimatedROI] = useState('');     // Generated estimated ROI
+    const [isLoading, setIsLoading] = useState(false);       // Loading state for API calls
+    const [errorMessage, setErrorMessage] = useState('');     // Error message state
+    const [showModal, setShowModal] = useState(false);        // State for showing the info modal
+
+    // New states for Technical Workflow (Conceptual)
+    const [streetViewLat, setStreetViewLat] = useState('34.052235'); // Default LA coordinates
+    const [streetViewLng, setStreetViewLng] = useState('-118.243683'); // Default LA coordinates
+    const [currentMapUrl, setCurrentMapUrl] = useState(''); // Stores the constructed Open Source Map URL
+    const [initialSearchParameters, setInitialSearchParameters] = useState('Detect degraded garage doors, identify peeling paint.'); // Example parameters
+    const [aiAdjustedParameters, setAiAdjustedParameters] = useState(''); // AI-adjusted parameters
+
+    // New states for Marketing Campaign (Conceptual Geofencing & One-Pagers)
+    const [neighborhoodName, setNeighborhoodName] = useState('Example Neighborhood A'); // Name for geofenced area
+    const [geofenceBounds, setGeofenceBounds] = useState('Approx. 1-mile radius around 123 Main St, Anytown, USA'); // Conceptual boundary
+    const [addressList, setAddressList] = useState('123 Main St\n456 Oak Ave\n789 Pine Ln'); // List of addresses for one-pagers
+    const [generatedOnePagers, setGeneratedOnePagers] = useState([]); // Array to store generated one-pager links/descriptions
+    const [isGeneratingOnePagers, setIsGeneratingOnePagers] = useState(false); // Loading state for one-pager generation
+
+    // New states for AI-Powered Property Improvement Suggestions
+    const [suggestionPrompt, setSuggestionPrompt] = useState('Suggest improvements for a typical suburban home');
+    const [aiSuggestions, setAiSuggestions] = useState([]);
+    const [isSuggesting, setIsSuggesting] = useState(false);
+
+    // New state for Market Trend Analysis
+    const [marketLocation, setMarketLocation] = useState('San Francisco Bay Area');
+    const [marketTrendAnalysis, setMarketTrendAnalysis] = useState('');
+    const [isAnalyzingMarket, setIsAnalyzingMarket] = useState(false);
+
+
+    // Dummy API key for Gemini models. Canvas will inject the real one.
+    const apiKey = ""; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+
+    const industries = [
+        'Garage Doors',
+        'Roofing',
+        'Window Replacement',
+        'Exterior Painting/Siding',
+        'Landscaping/Hardscaping',
+        'Real Estate Lead Generation'
+    ];
+
+    // Handles image file selection and conversion to base64
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setBeforeImage(reader.result); // Set the base64 string
+                setErrorMessage('');
+            };
+            reader.onerror = () => {
+                setErrorMessage("Failed to read image file.");
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Function to call Gemini API for text generation
+    const callGeminiApi = async (prompt, schema = null) => {
+        let chatHistory = [];
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+        const payload = { contents: chatHistory };
+        if (schema) {
+            payload.generationConfig = {
+                responseMimeType: "application/json",
+                responseSchema: schema
+            };
+        }
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Gemini API Error (${response.status}):`, errorText);
+                throw new Error(`Gemini API call failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                return schema ? JSON.parse(text) : text;
+            } else {
+                console.error("Gemini API response structure unexpected:", result);
+                setErrorMessage("Failed to get a valid response from Gemini AI. Please try again.");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            setErrorMessage(`Error communicating with Gemini AI: ${error.message}`);
+            return null;
+        }
+    };
+
+    // Function to call Imagen API for image generation
+    const callImagenApi = async (prompt, base64ImageData) => {
+        const mimeType = base64ImageData.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)?.[1] || 'image/jpeg';
+
+        const payload = {
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    { inlineData: { mimeType: mimeType, data: base64ImageData.split(',')[1] } }
+                ]
+            }],
+            generationConfig: { 
+                responseModalities: ["IMAGE"] 
+            }
+        };
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Image API Error (${response.status}):`, errorText);
+                throw new Error(`Image API failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            const base64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+            const resultMimeType = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.mimeType || 'image/png';
+
+            if (base64) {
+                return `data:${resultMimeType};base64,${base64}`;
+            } else {
+                console.error("Image API response structure unexpected:", result);
+                setErrorMessage("Failed to generate 'after' image. Please try again.");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error calling Image API:", error);
+            setErrorMessage(`Error communicating with Image AI: ${error.message}`);
+            return null;
+        }
+    };
+
+    // Main function to handle the generation process for property insights
+    const generateInsights = async () => {
+        if (!beforeImage) {
+            setErrorMessage("Please upload a 'before' image first.");
+            return;
+        }
+        if (!problemDescription.trim()) {
+            setErrorMessage("Please describe the problem or desired improvement.");
+            return;
+        }
+
+        setIsLoading(true);
+        setErrorMessage('');
+        setAfterImage(null);
+        setMarketingCopy('');
+        setEstimatedROI('');
+
+        try {
+            // Step 1: Use Gemini to formulate a detailed image generation prompt and ad copy context
+            const geminiPrompt = `
+                Given the user wants to improve their property for the "${industry}" industry, and they describe the current problem as "${problemDescription}",
+                Generate:
+                1. An detailed, descriptive, and actionable prompt for an image generation AI (Imagen) to transform the 'before' image to an 'after' image. The prompt should be specific about the visual changes to be made according to the industry and problem.
+                2. A compelling marketing headline and body copy for an ad targeting this specific improvement. Highlight benefits like aesthetics, value, or energy efficiency where applicable.
+                3. An estimated ROI statement (e.g., "Replacing old windows can offer a 70-80% ROI upon resale, plus annual energy savings of X%."). Make this concise and research-based.
+                Provide the output in JSON format with keys: "image_prompt", "marketing_headline", "marketing_body", "roi_statement".
+                Ensure the image_prompt is highly descriptive for image generation, for example, if the problem is 'old garage door' and industry is 'Garage Doors', the prompt should be like 'a modern, sleek dark grey garage door with frosted glass panels' not just 'new garage door'.
+            `;
+
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    "image_prompt": { "type": "STRING" },
+                    "marketing_headline": { "type": "STRING" },
+                    "marketing_body": { "type": "STRING" },
+                    "roi_statement": { "type": "STRING" }
+                },
+                propertyOrdering: ["image_prompt", "marketing_headline", "marketing_body", "roi_statement"]
+            };
+
+            const geminiResponse = await callGeminiApi(geminiPrompt, schema);
+
+            if (!geminiResponse) {
+                throw new Error("Failed to get initial insights from Gemini.");
+            }
+
+            const { image_prompt, marketing_headline, marketing_body, roi_statement } = geminiResponse;
+
+            // Step 2: Use Imagen to generate the "after" image
+            const generatedAfterImage = await callImagenApi(image_prompt, beforeImage);
+            if (!generatedAfterImage) {
+                throw new Error("Failed to generate the 'after' image.");
+            }
+            setAfterImage(generatedAfterImage);
+
+            // Step 3: Set the marketing copy and ROI
+            setMarketingCopy(`${marketing_headline}\n\n${marketing_body}`);
+            setEstimatedROI(roi_statement);
+
+        } catch (error) {
+            console.error("Error during insight generation:", error);
+            setErrorMessage(error.message || "An unexpected error occurred during generation.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Function to simulate AI adjustment of parameters
+    const adjustSearchParameters = async () => {
+        if (!initialSearchParameters.trim()) {
+            setErrorMessage("Please enter some initial search parameters to adjust.");
+            return;
+        }
+        setIsLoading(true);
+        setErrorMessage('');
+        setAiAdjustedParameters('');
+
+        try {
+            const prompt = `Adjust the following image analysis search parameters for the "${industry}" industry, focusing on identifying signs of degradation or improvement: "${initialSearchParameters}". Provide a more detailed and specific set of parameters in a single paragraph.`;
+            const adjustedText = await callGeminiApi(prompt);
+            if (adjustedText) {
+                setAiAdjustedParameters(adjustedText);
+            } else {
+                throw new Error("Failed to adjust parameters with AI.");
+            }
+        } catch (error) {
+            console.error("Error adjusting parameters:", error);
+            setErrorMessage(error.message || "An error occurred while adjusting parameters.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Function to generate an OpenStreetMap Embed URL
+    const generateMap = () => {
+        const lat = parseFloat(streetViewLat);
+        const lng = parseFloat(streetViewLng);
+        // Calculate a bounding box for the OpenStreetMap export
+        const offset = 0.005; 
+        const bbox = `${lng - offset},${lat - offset},${lng + offset},${lat + offset}`;
+        // Generate the embed URL for OSM
+        const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+        setCurrentMapUrl(embedUrl);
+    };
+
+    // Function to conceptually generate marketing one-pagers
+    const generateMarketingOnePagers = async () => {
+        const addresses = addressList.split('\n').filter(addr => addr.trim() !== '');
+        if (addresses.length === 0) {
+            setErrorMessage("Please enter at least one address to generate one-pagers.");
+            return;
+        }
+
+        setIsGeneratingOnePagers(true);
+        setErrorMessage('');
+        setGeneratedOnePagers([]);
+
+        try {
+            const prompt = `
+                For a marketing campaign targeting the "${industry}" industry in the neighborhood "${neighborhoodName}" (defined by "${geofenceBounds}"), generate conceptual marketing one-pager links and content summaries for each of the following addresses:
+                ${addresses.map((addr, index) => `${index + 1}. ${addr}`).join('\n')}
+
+                For each address, provide a JSON object with:
+                - "address": The full address.
+                - "link": A conceptual URL for the one-pager (e.g., "https://propertyinsight.com/campaign/neighborhood_name/address_hash").
+                - "summary": A brief (1-2 sentences) summary of what the one-pager content would include (e.g., "Personalized visuals of a new roof, estimated ROI, and a call to action for a free quote.").
+                Provide the output as a JSON array of these objects.
+            `;
+
+            const schema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        "address": { "type": "STRING" },
+                        "link": { "type": "STRING" },
+                        "summary": { "type": "STRING" }
+                    },
+                    propertyOrdering: ["address", "link", "summary"]
+                }
+            };
+
+            const onePagers = await callGeminiApi(prompt, schema);
+            if (onePagers && Array.isArray(onePagers)) {
+                setGeneratedOnePagers(onePagers);
+            } else {
+                throw new Error("Failed to generate one-pagers from AI.");
+            }
+
+        } catch (error) {
+            console.error("Error generating one-pagers:", error);
+            setErrorMessage(error.message || "An error occurred while generating marketing one-pagers.");
+        } finally {
+            setIsGeneratingOnePagers(false);
+        }
+    };
+
+    // New AI-Powered Property Improvement Suggestions function
+    const getAiSuggestions = async () => {
+        setIsSuggesting(true);
+        setErrorMessage('');
+        setAiSuggestions([]);
+
+        try {
+            const prompt = `
+                Given the selected industry is "${industry}" and the user's general observation is "${suggestionPrompt}", suggest a list of 3-5 specific property improvements. Focus on actionable, visually impactful changes relevant to the industry.
+                Provide the output as a JSON array of strings, where each string is an improvement suggestion.
+            `;
+            const schema = {
+                type: "ARRAY",
+                items: { "type": "STRING" }
+            };
+            const suggestions = await callGeminiApi(prompt, schema);
+            if (suggestions && Array.isArray(suggestions)) {
+                setAiSuggestions(suggestions);
+            } else {
+                throw new Error("Failed to get AI suggestions.");
+            }
+        } catch (error) {
+            console.error("Error getting AI suggestions:", error);
+            setErrorMessage(error.message || "An error occurred while fetching AI suggestions.");
+        } finally {
+            setIsSuggesting(false);
+        }
+    };
+
+    // New Market Trend Analysis function for ROI
+    const analyzeMarketTrends = async () => {
+        if (!estimatedROI && !marketLocation) {
+            setErrorMessage("Please generate an ROI first or provide a market location for analysis.");
+            return;
+        }
+
+        setIsAnalyzingMarket(true);
+        setErrorMessage('');
+        setMarketTrendAnalysis('');
+
+        try {
+            const prompt = `
+                Given the estimated ROI: "${estimatedROI}", for a property improvement related to the "${industry}" industry,
+                and considering the market location of "${marketLocation}",
+                provide a concise paragraph (3-5 sentences) on how current market trends or typical market conditions in that area might influence or validate this ROI. Focus on factors like demand, property values, or recent sales data for similar improvements.
+                If the ROI is empty, then focus on general market trends for the given industry and location.
+            `;
+            const analysis = await callGeminiApi(prompt);
+            if (analysis) {
+                setMarketTrendAnalysis(analysis);
+            } else {
+                throw new Error("Failed to analyze market trends.");
+            }
+        } catch (error) {
+            console.error("Error analyzing market trends:", error);
+            setErrorMessage(error.message || "An error occurred during market trend analysis.");
+        } finally {
+            setIsAnalyzingMarket(false);
+        }
+    };
+
+
+    // Modal component for information
+    const InfoModal = ({ show, onClose }) => {
+        if (!show) return null;
+        return (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center p-4 z-50">
+                <div className="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">PropertyInsight AI Initiative</h2>
+                    <p className="text-gray-700 mb-4">
+                        Welcome to the PropertyInsight AI Initiative! This tool helps visualize property improvements and generate targeted marketing content.
+                    </p>
+                    <ul className="list-disc pl-5 text-gray-700 mb-4 space-y-2">
+                        <li>
+                            <strong className="font-semibold">Upload Image:</strong> Start by uploading a clear image of the property you want to improve. This is your "before" photo.
+                        </li>
+                        <li>
+                            <strong className="font-semibold">Describe Problem/Improvement:</strong> In the text box, describe what's wrong with the property or what improvement you envision (e.g., "old, rusty garage door," "faded exterior paint," "overgrown lawn").
+                        </li>
+                        <li>
+                            <strong className="font-semibold">Select Industry:</strong> Choose the relevant industry from the dropdown menu (e.g., "Garage Doors", "Roofing", "Landscaping"). This helps the AI tailor its suggestions.
+                        </li>
+                        <li>
+                            <strong className="font-semibold">Generate Insights:</strong> Click the button to have the AI process your inputs. It will generate an "after" image showing the improvement, personalized marketing copy, and an estimated Return on Investment (ROI).
+                        </li>
+                    </ul>
+                    <p className="text-gray-700 mb-6">
+                        This application uses advanced AI models to provide realistic visualizations and compelling marketing content, helping you or your clients envision property potential!
+                    </p>
+                    <button
+                        onClick={onClose}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+                    >
+                        Got It!
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800 flex flex-col items-center">
+            <header className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg mb-6 flex justify-between items-center">
+                <h1 className="text-3xl font-extrabold text-indigo-700">PropertyInsight AI</h1>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition duration-300 shadow-md"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Info
+                </button>
+            </header>
+
+            <main className="w-full max-w-4xl bg-white p-8 rounded-xl shadow-lg flex flex-col gap-8">
+                {/* Technical Workflow Section */}
+                <section className="space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-700 mb-4">Technical Workflow (Conceptual)</h2>
+                    <p className="text-gray-700 text-sm mb-4">
+                        The PropertyInsight AI Initiative's foundation is a sophisticated, multi-stage pipeline. Below is a conceptual illustration of how it works utilizing Open Source Mapping architectures.
+                    </p>
+
+                    {/* 1. Data Collection: Open Source Geospatial Mapping */}
+                    <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">1. Data Collection: Open Source Geospatial Mapping</h3>
+                        <p className="text-gray-600 text-sm mb-3">
+                            The system acquires location data and geospatial verification using decentralized, open-source cartography (OpenStreetMap), providing a resilient foundation independent of legacy siloed datasets.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                            <input
+                                type="text"
+                                className="flex-1 p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Latitude (e.g., 34.052235)"
+                                value={streetViewLat}
+                                onChange={(e) => setStreetViewLat(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                className="flex-1 p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Longitude (e.g., -118.243683)"
+                                value={streetViewLng}
+                                onChange={(e) => setStreetViewLng(e.target.value)}
+                            />
+                            <button
+                                onClick={generateMap}
+                                className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-md transition duration-300 font-medium"
+                            >
+                                Load OpenStreetMap
+                            </button>
+                        </div>
+                        {currentMapUrl && (
+                            <div className="w-full h-80 border-2 border-indigo-100 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 shadow-inner relative">
+                                <iframe
+                                    width="100%"
+                                    height="100%"
+                                    frameBorder="0"
+                                    scrolling="no"
+                                    marginHeight="0"
+                                    marginWidth="0"
+                                    src={currentMapUrl}
+                                    title="Open Source Map View"
+                                    className="absolute inset-0"
+                                ></iframe>
+                            </div>
+                        )}
+                        {!currentMapUrl && (
+                             <div className="w-full h-64 border border-gray-300 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 border-dashed">
+                                <p className="text-gray-400 text-sm">Enter coordinates and click load to view the open-source map.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 2. OCR and Image Analysis: Identifying Target Properties */}
+                    <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">2. OCR and Image Analysis: Identifying Target Properties</h3>
+                        <p className="text-gray-600 text-sm mb-3">
+                            This stage conceptually employs Google Cloud Vision and OpenCV for analysis. Search parameters can be seamlessly adjusted via Gemini AI.
+                        </p>
+                        <div>
+                            <label htmlFor="initial-params" className="block text-sm font-medium text-gray-700 mb-2">Initial Search Parameters (for OCR/Analysis):</label>
+                            <textarea
+                                id="initial-params"
+                                className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                rows="3"
+                                value={initialSearchParameters}
+                                onChange={(e) => setInitialSearchParameters(e.target.value)}
+                                placeholder="e.g., 'Detect degraded garage doors, identify peeling paint.'"
+                            ></textarea>
+                        </div>
+                        <button
+                            onClick={adjustSearchParameters}
+                            disabled={isLoading || !initialSearchParameters.trim()}
+                            className={`w-full mt-4 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition duration-300 ease-in-out
+                                ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75'}`}
+                        >
+                            {isLoading ? (
+                                <span className="flex items-center justify-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Adjusting Parameters...
+                                </span>
+                            ) : (
+                                'Adjust Parameters with AI (Conceptual)'
+                            )}
+                        </button>
+                        {aiAdjustedParameters && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-gray-800 text-sm">
+                                <h4 className="font-semibold mb-1">AI Adjusted Parameters:</h4>
+                                <p className="whitespace-pre-wrap">{aiAdjustedParameters}</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* AI-Powered Property Improvement Suggestions Section */}
+                <section className="space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-700 mb-4">AI-Powered Property Improvement Suggestions ✨</h2>
+                    <p className="text-gray-700 text-sm mb-4">
+                        Get AI-generated ideas for property improvements based on your input and selected industry.
+                    </p>
+                    <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                        <div>
+                            <label htmlFor="suggestion-prompt" className="block text-sm font-medium text-gray-700 mb-2">Describe general property type/condition for suggestions:</label>
+                            <textarea
+                                id="suggestion-prompt"
+                                className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                rows="2"
+                                placeholder="e.g., 'a dated 1970s ranch home', 'a neglected backyard', 'a modern condo needing a refresh'"
+                                value={suggestionPrompt}
+                                onChange={(e) => setSuggestionPrompt(e.target.value)}
+                            ></textarea>
+                        </div>
+                        <button
+                            onClick={getAiSuggestions}
+                            disabled={isSuggesting || suggestionPrompt.trim() === ''}
+                            className={`w-full mt-4 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition duration-300 ease-in-out
+                                ${isSuggesting ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75'}`}
+                        >
+                            {isSuggesting ? (
+                                <span className="flex items-center justify-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Getting Suggestions...
+                                </span>
+                            ) : (
+                                'Get AI Suggestions ✨'
+                            )}
+                        </button>
+                        {aiSuggestions.length > 0 && (
+                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-gray-800 text-sm">
+                                <h4 className="font-semibold mb-1">Suggested Improvements:</h4>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    {aiSuggestions.map((suggestion, index) => (
+                                        <li key={index}>{suggestion}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+
+                {/* Marketing Campaign Management Section */}
+                <section className="space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-700 mb-4">Marketing Campaign Management (Conceptual)</h2>
+                    <p className="text-gray-700 text-sm mb-4">
+                        Define a neighborhood to target and generate conceptual personalized marketing one-pagers for each address.
+                    </p>
+
+                    {/* Geofencing Input */}
+                    <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">1. Define Neighborhood Geofence</h3>
+                        <div>
+                            <label htmlFor="neighborhood-name" className="block text-sm font-medium text-gray-700 mb-2">Neighborhood Name:</label>
+                            <input
+                                type="text"
+                                id="neighborhood-name"
+                                className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="e.g., 'Springfield Heights'"
+                                value={neighborhoodName}
+                                onChange={(e) => setNeighborhoodName(e.target.value)}
+                            />
+                        </div>
+                        <div className="mt-4">
+                            <label htmlFor="geofence-bounds" className="block text-sm font-medium text-gray-700 mb-2">Conceptual Boundary / Description:</label>
+                            <textarea
+                                id="geofence-bounds"
+                                className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                rows="2"
+                                placeholder="e.g., 'Bounded by Elm St, Oak Ave, and Maple Ln'"
+                                value={geofenceBounds}
+                                onChange={(e) => setGeofenceBounds(e.target.value)}
+                            ></textarea>
+                        </div>
+                        <button
+                            onClick={() => alert("Geofence Defined (Conceptually): " + neighborhoodName + " - " + geofenceBounds)}
+                            className="w-full mt-4 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition duration-300 bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+                        >
+                            Define Geofence (Conceptual)
+                        </button>
+                    </div>
+
+                    {/* Generate Marketing One-Pagers */}
+                    <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">2. Generate Individual Marketing One-Pagers</h3>
+                        <p className="text-gray-600 text-sm mb-3">
+                            Input a list of addresses (one per line) within the defined geofence to generate conceptual personalized marketing one-pager links.
+                        </p>
+                        <div>
+                            <label htmlFor="address-list" className="block text-sm font-medium text-gray-700 mb-2">Addresses (one per line):</label>
+                            <textarea
+                                id="address-list"
+                                className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                rows="5"
+                                placeholder="e.g.,&#10;123 Main St&#10;456 Oak Ave&#10;789 Pine Ln"
+                                value={addressList}
+                                onChange={(e) => setAddressList(e.target.value)}
+                            ></textarea>
+                        </div>
+                        <button
+                            onClick={generateMarketingOnePagers}
+                            disabled={isGeneratingOnePagers || addressList.trim() === ''}
+                            className={`w-full mt-4 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition duration-300 ease-in-out
+                                ${isGeneratingOnePagers ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75'}`}
+                        >
+                            {isGeneratingOnePagers ? (
+                                <span className="flex items-center justify-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Generating Links...
+                                </span>
+                            ) : (
+                                'Generate Marketing One-Pagers (Conceptual)'
+                            )}
+                        </button>
+
+                        {generatedOnePagers.length > 0 && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-gray-800 text-sm">
+                                <h4 className="font-semibold mb-2">Generated One-Pager Links:</h4>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    {generatedOnePagers.map((pager, index) => (
+                                        <li key={index}>
+                                            <a href={pager.link} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline font-medium">
+                                                {pager.address}
+                                            </a>: {pager.summary}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* Main Input/Output Sections */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Input Section */}
+                    <section className="space-y-6">
+                        <h2 className="text-2xl font-bold text-gray-700 mb-4">Property Improvement Visualization</h2>
+
+                        <div>
+                            <label htmlFor="image-upload" className="block text-sm font-medium text-gray-700 mb-2">Upload Property Image:</label>
+                            <input
+                                id="image-upload"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition duration-300"
+                            />
+                            {beforeImage && (
+                                <div className="mt-4 border border-gray-300 rounded-lg overflow-hidden">
+                                    <img src={beforeImage} alt="Before" className="w-full h-auto object-cover rounded-lg" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="problem-description" className="block text-sm font-medium text-gray-700 mb-2">Describe Problem/Improvement:</label>
+                            <textarea
+                                id="problem-description"
+                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                rows="4"
+                                placeholder="e.g., 'old, rusty garage door', 'faded exterior paint', 'overgrown lawn'"
+                                value={problemDescription}
+                                onChange={(e) => setProblemDescription(e.target.value)}
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label htmlFor="industry-select" className="block text-sm font-medium text-gray-700 mb-2">Select Industry:</label>
+                            <select
+                                id="industry-select"
+                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                                value={industry}
+                                onChange={(e) => setIndustry(e.target.value)}
+                            >
+                                {industries.map((ind) => (
+                                    <option key={ind} value={ind}>{ind}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button
+                            onClick={generateInsights}
+                            disabled={isLoading || !beforeImage || !problemDescription.trim()}
+                            className={`w-full py-3 px-6 rounded-lg text-white font-semibold text-lg shadow-md transition duration-300 ease-in-out
+                                ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75'}`}
+                        >
+                            {isLoading ? (
+                                <span className="flex items-center justify-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Generating Insights...
+                                </span>
+                            ) : (
+                                'Generate Property Insights'
+                            )}
+                        </button>
+                        {errorMessage && (
+                            <p className="text-red-600 text-sm mt-2 text-center">{errorMessage}</p>
+                        )}
+                    </section>
+
+                    {/* Output Section */}
+                    <section className="space-y-6">
+                        <div className="flex justify-between items-end mb-4">
+                            <h2 className="text-2xl font-bold text-gray-700">Alter Rendering Engine</h2>
+                            {afterImage && <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider rounded-full">Render Complete</span>}
+                        </div>
+                        <p className="text-sm text-gray-600 -mt-4 mb-4">
+                            The geometric and photometric pipeline programmatically renovates properties, providing a photorealistic comparison to drastically increase lead conversion rates. Slide to compare.
+                        </p>
+
+                        <div className="w-full">
+                            <ImageComparisonSlider 
+                                before={beforeImage} 
+                                after={afterImage} 
+                                isLoading={isLoading} 
+                            />
+                        </div>
+
+                        {marketingCopy && (
+                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                                <h3 className="text-lg font-medium text-gray-700 mb-2">Personalized Marketing Copy</h3>
+                                <p className="whitespace-pre-wrap text-gray-700 text-sm leading-relaxed">{marketingCopy}</p>
+                            </div>
+                        )}
+
+                        {/* Enhanced Estimated ROI with Market Trend Analysis */}
+                        <div className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="text-lg font-medium text-gray-700 mb-2">Estimated ROI & Market Trend Analysis ✨</h3>
+                            {estimatedROI && (
+                                <p className="text-green-700 font-semibold text-sm leading-relaxed mb-3">{estimatedROI}</p>
+                            )}
+                            <div>
+                                <label htmlFor="market-location" className="block text-sm font-medium text-gray-700 mb-2">Location for Market Trend Analysis:</label>
+                                <input
+                                    type="text"
+                                    id="market-location"
+                                    className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="e.g., 'Dallas, TX', 'Coastal Florida'"
+                                    value={marketLocation}
+                                    onChange={(e) => setMarketLocation(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={analyzeMarketTrends}
+                                disabled={isAnalyzingMarket || !marketLocation.trim() || (!estimatedROI && !problemDescription)}
+                                className={`w-full mt-4 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition duration-300 ease-in-out
+                                    ${isAnalyzingMarket ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75'}`}
+                            >
+                                {isAnalyzingMarket ? (
+                                    <span className="flex items-center justify-center">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Analyzing Trends...
+                                    </span>
+                                ) : (
+                                    'Analyze Market Trends for ROI ✨'
+                                )}
+                            </button>
+                            {marketTrendAnalysis && (
+                                <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-gray-800 text-sm">
+                                    <h4 className="font-semibold mb-1">Market Trend Analysis:</h4>
+                                    <p className="whitespace-pre-wrap">{marketTrendAnalysis}</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <InfoModal show={showModal} onClose={() => setShowModal(false)} />
+        </div>
+    );
+}
+
+export default App;
