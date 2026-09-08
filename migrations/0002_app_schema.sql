@@ -72,6 +72,5 @@ create table if not exists tile_preferences (
   id text not null primary key,
   active_layer text not null default 'dark',
   show_heatmap boolean not null default false,
-  user_id text references "user"("id") on delete cascade,
   created_at timestamptz default CURRENT_TIMESTAMP not null
 );

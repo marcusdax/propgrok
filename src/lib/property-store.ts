@@ -4,6 +4,7 @@ import { SAMPLES } from "./knowledge";
 import type {
   Amenity,
   Dossier,
+  DiligenceRun,
   NeighborhoodIntel,
   OnePager,
   PanelTab,
@@ -41,6 +42,8 @@ type State = {
   dossier: Dossier | null;
   dossierStatus: Status;
   dossierError: string | null;
+  diligence: DiligenceRun | null;
+  diligenceStatus: Status;
   neighborhood: NeighborhoodIntel | null;
   neighborhoodStatus: Status;
   amenities: Amenity[];
@@ -64,6 +67,7 @@ type Actions = {
   setGeofenceRadius: (m: number) => void;
   setZoneHits: (hits: PropertyPin[]) => void;
   setDossier: (d: Dossier | null, status?: Status, error?: string | null) => void;
+  setDiligence: (run: DiligenceRun | null, status?: Status) => void;
   setNeighborhood: (n: NeighborhoodIntel | null, status?: Status) => void;
   setAmenities: (a: Amenity[]) => void;
   setPanelTab: (t: PanelTab) => void;
@@ -94,6 +98,8 @@ export const usePropertyStore = create<State & Actions>()(
       dossier: null,
       dossierStatus: "idle",
       dossierError: null,
+      diligence: null,
+      diligenceStatus: "idle",
       neighborhood: null,
       neighborhoodStatus: "idle",
       amenities: [],
@@ -118,6 +124,8 @@ export const usePropertyStore = create<State & Actions>()(
           dossier: null,
           dossierStatus: "idle",
           dossierError: null,
+          diligence: null,
+          diligenceStatus: "idle",
           neighborhood: null,
           neighborhoodStatus: "idle",
           amenities: [],
@@ -130,6 +138,8 @@ export const usePropertyStore = create<State & Actions>()(
           selected: null,
           dossier: null,
           dossierStatus: "idle",
+          diligence: null,
+          diligenceStatus: "idle",
           neighborhood: null,
           zoneHits: [],
           render: null,
@@ -139,6 +149,7 @@ export const usePropertyStore = create<State & Actions>()(
       setZoneHits: (hits) => set({ zoneHits: hits }),
       setDossier: (d, status = d ? "ready" : "idle", error = null) =>
         set({ dossier: d, dossierStatus: status, dossierError: error }),
+      setDiligence: (run, status = run ? "ready" : "idle") => set({ diligence: run, diligenceStatus: status }),
       setNeighborhood: (n, status = n ? "ready" : "idle") =>
         set({ neighborhood: n, neighborhoodStatus: status }),
       setAmenities: (a) => set({ amenities: a }),

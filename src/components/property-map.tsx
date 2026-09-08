@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CesiumPropertyMap } from "@/components/cesium-property-map";
 import { usePropertyStore } from "@/lib/property-store";
 import { formatMiles } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ type Props = {
   onMapClick: (lat: number, lng: number) => void;
 };
 
-export function PropertyMap({ onMapClick }: Props) {
+function LeafletPropertyMap({ onMapClick }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const pinRef = useRef<import("leaflet").Marker | null>(null);
@@ -294,6 +295,42 @@ export function PropertyMap({ onMapClick }: Props) {
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+export function PropertyMap({ onMapClick }: Props) {
+  const [mapMode, setMapMode] = useState<"leaflet" | "cesium">("leaflet");
+
+  return (
+    <div className="relative h-full w-full">
+      {mapMode === "cesium" ? (
+        <CesiumPropertyMap onMapClick={onMapClick} />
+      ) : (
+        <LeafletPropertyMap onMapClick={onMapClick} />
+      )}
+      <div className="absolute right-2 top-2 z-[1000] flex rounded-lg bg-background/90 p-1 shadow-lg backdrop-blur-sm">
+        <button
+          type="button"
+          aria-pressed={mapMode === "leaflet"}
+          onClick={() => setMapMode("leaflet")}
+          className={`rounded px-2 py-1.5 text-xs font-medium transition-all ${
+            mapMode === "leaflet" ? "bg-primary text-background" : "text-foreground/70 hover:bg-accent"
+          }`}
+        >
+          2D Map
+        </button>
+        <button
+          type="button"
+          aria-pressed={mapMode === "cesium"}
+          onClick={() => setMapMode("cesium")}
+          className={`rounded px-2 py-1.5 text-xs font-medium transition-all ${
+            mapMode === "cesium" ? "bg-primary text-background" : "text-foreground/70 hover:bg-accent"
+          }`}
+        >
+          3D Globe
+        </button>
+      </div>
     </div>
   );
 }

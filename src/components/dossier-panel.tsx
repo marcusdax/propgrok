@@ -80,7 +80,7 @@ export function DossierPanel({
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={dpsVariant(dps.tier)}>DPS {dps.score} · {dps.tier}</Badge>
-          {dossier.enriched ? <Badge variant="ok">Grok overlay</Badge> : <Badge variant="muted">Local model</Badge>}
+          {dossier.enriched ? <Badge variant="ok">AI narrative overlay</Badge> : <Badge variant="muted">Deterministic screen</Badge>}
           {profile.occupancy !== "owner" && <Badge variant="outline">{profile.occupancy}</Badge>}
         </div>
         <h2 className="font-display text-2xl leading-tight tracking-tight md:text-3xl">{dossier.pin.address}</h2>
@@ -256,7 +256,6 @@ export function DossierPanel({
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Risks</CardTitle>
@@ -327,6 +326,7 @@ export function DossierPanel({
               {a.type}: {a.value} — {a.explanation}
             </p>
           ))}
+          <p className="pt-1">Modeled valuation and renovation outputs are screening inputs. The Diligence tab gates them against required acquisition evidence.</p>
         </CardContent>
       </Card>
     </div>
@@ -384,6 +384,12 @@ export function NeighborhoodPanel({ intel, loading }: { intel: NeighborhoodIntel
         </div>
       </div>
       <p className="text-sm leading-relaxed">{intel.summary}</p>
+      <Card className="border-primary/25 bg-primary/5">
+        <CardContent className="pt-4">
+          <p className="text-[11px] uppercase tracking-wider text-primary">Investor read</p>
+          <p className="mt-1 text-sm leading-relaxed">{intel.investorRead}</p>
+        </CardContent>
+      </Card>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {intel.clusters.map((c) => (
           <div key={c.kind} className="rounded-lg border border-border bg-card p-3">
@@ -392,12 +398,119 @@ export function NeighborhoodPanel({ intel, loading }: { intel: NeighborhoodIntel
           </div>
         ))}
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Schools & education</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {intel.schoolHighlights.length > 0 ? (
+              intel.schoolHighlights.map((school) => (
+                <div key={`${school.name}-${school.kind}`} className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate">{school.name}</span>
+                    <span className="text-xs text-muted-foreground">{school.kind}</span>
+                  </span>
+                  <span className="shrink-0 tabular text-xs text-muted-foreground">
+                    {(school.distanceM / 1609.344).toFixed(2)} mi
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground">No education POIs returned in this radius.</p>
+            )}
+            <p className="border-t border-border pt-2 text-xs text-muted-foreground">{intel.schoolsNote}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Top nearby amenities</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {intel.amenityHighlights.length > 0 ? (
+              intel.amenityHighlights.map((amenity) => (
+                <div key={amenity.id} className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate">{amenity.name}</span>
+                    <span className="text-xs capitalize text-muted-foreground">{amenity.kind.replaceAll("_", " ")}</span>
+                  </span>
+                  <span className="shrink-0 tabular text-xs text-muted-foreground">
+                    {(amenity.distanceM / 1609.344).toFixed(2)} mi
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground">No nearby amenity highlights returned.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      {intel.census && (
+        <Card className="border-primary/25">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between gap-3">
+              <span>Open Census profile</span>
+              <Badge variant="outline">{intel.census.vintage}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Stat label="Population" value={intel.census.population?.toLocaleString() ?? "N/A"} hint={intel.census.geography} />
+              <Stat label="Median income" value={intel.census.medianIncome != null ? compactUsd(intel.census.medianIncome) : "N/A"} hint="household" />
+              <Stat label="Bachelor+" value={intel.census.bachelorPlusPct != null ? `${intel.census.bachelorPlusPct}%` : "N/A"} hint="adults 25+" />
+              <Stat label="Owner occupied" value={intel.census.ownerOccupancyPct != null ? `${intel.census.ownerOccupancyPct}%` : "N/A"} hint="housing units" />
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Source: {intel.census.source}. These are ACS estimates for the full ZIP geography, not parcel-level facts or school-boundary assignments.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Local signals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {intel.demographicHighlights.map((signal) => (
+              <div key={signal.label}>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span>{signal.label}</span>
+                  <span className="tabular text-primary">{signal.value}</span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{signal.detail}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Market posture</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {intel.marketSignals.map((signal) => (
+              <div key={signal.label}>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span>{signal.label}</span>
+                  <span className="tabular text-primary">{signal.value}</span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{signal.detail}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
       <Card>
         <CardContent className="space-y-3 pt-4 text-sm">
-          <p>{intel.schoolsNote}</p>
           <p className="text-muted-foreground">{intel.laborNote}</p>
           <p className="text-muted-foreground">{intel.zoningNote}</p>
           <p>{intel.trend}</p>
+          <div className="border-t border-border pt-3">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Data gaps to close</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+              {intel.dataGaps.map((gap) => <li key={gap}>{gap}</li>)}
+            </ul>
+          </div>
         </CardContent>
       </Card>
       <Card>

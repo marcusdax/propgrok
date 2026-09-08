@@ -20,9 +20,9 @@
  * `process.env`, which is why the merge has to happen before Vite starts.
  */
 import { spawn } from "node:child_process";
-import { readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { constants as osConstants } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const APP_ENV_REL_PATH = ".grok/app-env.json";
@@ -111,7 +111,14 @@ function main(argv) {
     process.exit(2);
   }
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const child = spawn(command, args, { stdio: "inherit", env });
+  const isWindowsBin = process.platform === "win32" && extname(command) === "";
+  const localWindowsBin = join(projectRoot(), "node_modules", ".bin", `${command}.cmd`);
+  const executable = isWindowsBin && existsSync(localWindowsBin) ? localWindowsBin : command;
+  const child = spawn(executable, args, {
+    stdio: "inherit",
+    env,
+    shell: isWindowsBin,
+  });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));

@@ -6,7 +6,7 @@ export type FeatureKey =
   | "paint"
   | "landscaping";
 
-export type PanelTab = "dossier" | "neighborhood" | "alter" | "campaign" | "heatmap";
+export type PanelTab = "dossier" | "diligence" | "neighborhood" | "alter" | "campaign" | "heatmap";
 
 export type GeocodeHit = {
   id: string;
@@ -96,6 +96,50 @@ export type EvidenceDocument = {
   assertions: { type: string; value: string; explanation: string }[];
 };
 
+export type ClaimStatus = "verified" | "inferred" | "user_provided" | "missing";
+
+export type SourceRecord = {
+  id: string;
+  label: string;
+  kind: "public" | "user_upload" | "model" | "deterministic_model";
+  accessedAt: string;
+  status: "available" | "unavailable";
+  detail: string;
+};
+
+export type DiligenceClaim = {
+  id: string;
+  label: string;
+  value: string;
+  status: ClaimStatus;
+  sourceIds: string[];
+  confidence: number | null;
+  detail: string;
+};
+
+export type ModelRunProvenance = {
+  provider: "freellmapi" | "production";
+  model: string;
+  profile: string;
+  routedVia?: string;
+  completedAt: string;
+  mode: "public" | "sensitive";
+};
+
+export type DiligenceRun = {
+  id: string;
+  createdAt: string;
+  status: "ready_for_human_review" | "blocked" | "degraded";
+  recommendation: string;
+  memo: string;
+  risks: RiskItem[];
+  requests: string[];
+  claims: DiligenceClaim[];
+  sources: SourceRecord[];
+  modelRun?: ModelRunProvenance;
+  providerNotice?: string;
+};
+
 export type MetroProfile = {
   id: string;
   name: string;
@@ -168,6 +212,23 @@ export type NeighborhoodIntel = {
   walkScore: number;
   amenities: Amenity[];
   clusters: { kind: string; count: number }[];
+  schoolHighlights: { name: string; kind: string; distanceM: number }[];
+  amenityHighlights: Amenity[];
+  census: {
+    geography: string;
+    vintage: string;
+    source: string;
+    population: number | null;
+    medianIncome: number | null;
+    medianAge: number | null;
+    bachelorPlusPct: number | null;
+    ownerOccupancyPct: number | null;
+    householdSize: number | null;
+  } | null;
+  demographicHighlights: { label: string; value: string; detail: string }[];
+  marketSignals: { label: string; value: string; detail: string }[];
+  dataGaps: string[];
+  investorRead: string;
   schoolsNote: string;
   laborNote: string;
   zoningNote: string;

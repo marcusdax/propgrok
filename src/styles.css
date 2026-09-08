@@ -115,6 +115,24 @@
   width: 100%;
 }
 
+.cesium-container,
+.cesium-container .cesium-viewer,
+.cesium-container .cesium-viewer-cesiumWidgetContainer,
+.cesium-container .cesium-widget canvas {
+  height: 100%;
+  width: 100%;
+}
+
+.cesium-container .cesium-widget-credits {
+  background: rgb(12 13 11 / 72%);
+  color: #9c9a92;
+  font-size: 10px;
+}
+
+.cesium-container .cesium-widget-credits a {
+  color: #c4b49a;
+}
+
 .leaflet-control-attribution {
   background: rgb(12 13 11 / 72%) !important;
   color: #9c9a92 !important;

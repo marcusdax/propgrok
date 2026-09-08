@@ -5,6 +5,7 @@ import { CampaignPanel } from "@/components/campaign-panel";
 import { BrandMark, CommandSearch, GeofenceToggle } from "@/components/command-search";
 import { DossierPanel, NeighborhoodPanel } from "@/components/dossier-panel";
 import { DemographicHeatmap } from "@/components/demographic-heatmap";
+import { DiligencePanel } from "@/components/diligence-panel";
 import { MapHost } from "@/components/property-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildDossier } from "@/lib/engine";
 import { usePropertyStore } from "@/lib/property-store";
 import { analyzeNeighborhood, analyzeProperty } from "@/lib/server/analyze";
+import { createDiligenceRun } from "@/lib/server/diligence";
 import { fetchAmenities, reverseGeocode } from "@/lib/server/geo";
 import type { GeocodeHit, PanelTab, PropertyPin } from "@/lib/types";
 import { formatMiles } from "@/lib/utils";
@@ -32,6 +34,9 @@ export function ScoutWorkspace() {
   const dossier = usePropertyStore((s) => s.dossier);
   const dossierStatus = usePropertyStore((s) => s.dossierStatus);
   const setDossier = usePropertyStore((s) => s.setDossier);
+  const diligence = usePropertyStore((s) => s.diligence);
+  const diligenceStatus = usePropertyStore((s) => s.diligenceStatus);
+  const setDiligence = usePropertyStore((s) => s.setDiligence);
   const neighborhood = usePropertyStore((s) => s.neighborhood);
   const neighborhoodStatus = usePropertyStore((s) => s.neighborhoodStatus);
   const setNeighborhood = usePropertyStore((s) => s.setNeighborhood);
@@ -52,6 +57,7 @@ export function ScoutWorkspace() {
 
   const runIntel = async (pin: PropertyPin) => {
     setDossier(buildDossier(pin), "loading");
+    setDiligence(null, "loading");
     setNeighborhood(null, "loading");
     setStage(0);
     try {
@@ -69,10 +75,16 @@ export function ScoutWorkspace() {
       else setDossier(buildDossier(pin), "ready");
       if (hood.ok) setNeighborhood(hood.intel, "ready");
       else setNeighborhood(null, "idle");
+      const finalDossier = prop.ok ? prop.dossier : buildDossier(pin);
+      const finalNeighborhood = hood.ok ? hood.intel : null;
+      const diligence = await createDiligenceRun({ data: { dossier: finalDossier, neighborhood: finalNeighborhood } });
+      if (diligence.ok) setDiligence(diligence.run, "ready");
+      else setDiligence(null, "error");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Analysis failed";
       toast.error(msg);
       setDossier(buildDossier(pin), "ready", msg);
+      setDiligence(null, "error");
       setNeighborhood(null, "idle");
     }
   };
@@ -142,6 +154,7 @@ export function ScoutWorkspace() {
             <Tabs value={panelTab} onValueChange={(v) => setPanelTab(v as PanelTab)} className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto">
                 <TabsTrigger value="dossier">Dossier</TabsTrigger>
+                <TabsTrigger value="diligence">Diligence</TabsTrigger>
                 <TabsTrigger value="neighborhood">Neighborhood</TabsTrigger>
                 <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
                 <TabsTrigger value="alter">Alter</TabsTrigger>
@@ -164,6 +177,7 @@ export function ScoutWorkspace() {
                   onSample={onHit}
                 />
               )}
+              {panelTab === "diligence" && <DiligencePanel run={diligence} loading={diligenceStatus === "loading"} />}
               {panelTab === "neighborhood" && (
                 <NeighborhoodPanel intel={neighborhood} loading={neighborhoodStatus === "loading"} />
               )}
