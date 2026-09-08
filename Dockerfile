@@ -1,9 +1,9 @@
-# PropertyInsight - Production Docker build
+# PropertyInsight - Development Docker build
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Install all dependencies (needed for dev server)
+# Install all dependencies
 COPY package.json package-lock.json ./
 ENV GROK_ALLOW_INSTALL_SCRIPTS=1
 RUN npm ci --no-audit --no-fund
@@ -20,7 +20,7 @@ USER nodejs
 EXPOSE 8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:8080/', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Start dev server

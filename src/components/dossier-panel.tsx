@@ -80,7 +80,7 @@ export function DossierPanel({
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={dpsVariant(dps.tier)}>DPS {dps.score} · {dps.tier}</Badge>
-          {dossier.enriched ? <Badge variant="ok">AI narrative overlay</Badge> : <Badge variant="muted">Deterministic screen</Badge>}
+          {dossier.enriched ? <Badge variant="ok">Grok overlay</Badge> : <Badge variant="muted">Local model</Badge>}
           {profile.occupancy !== "owner" && <Badge variant="outline">{profile.occupancy}</Badge>}
         </div>
         <h2 className="font-display text-2xl leading-tight tracking-tight md:text-3xl">{dossier.pin.address}</h2>
@@ -326,7 +326,6 @@ export function DossierPanel({
               {a.type}: {a.value} — {a.explanation}
             </p>
           ))}
-          <p className="pt-1">Modeled valuation and renovation outputs are screening inputs. The Diligence tab gates them against required acquisition evidence.</p>
         </CardContent>
       </Card>
     </div>

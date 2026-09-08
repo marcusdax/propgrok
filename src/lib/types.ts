@@ -6,7 +6,7 @@ export type FeatureKey =
   | "paint"
   | "landscaping";
 
-export type PanelTab = "dossier" | "diligence" | "neighborhood" | "alter" | "campaign" | "heatmap";
+export type PanelTab = "dossier" | "neighborhood" | "alter" | "campaign" | "heatmap";
 
 export type GeocodeHit = {
   id: string;
@@ -94,50 +94,6 @@ export type EvidenceDocument = {
   modelVersions: Record<string, { version: string }>;
   confidence: { overall: number; byStage: Record<string, number> };
   assertions: { type: string; value: string; explanation: string }[];
-};
-
-export type ClaimStatus = "verified" | "inferred" | "user_provided" | "missing";
-
-export type SourceRecord = {
-  id: string;
-  label: string;
-  kind: "public" | "user_upload" | "model" | "deterministic_model";
-  accessedAt: string;
-  status: "available" | "unavailable";
-  detail: string;
-};
-
-export type DiligenceClaim = {
-  id: string;
-  label: string;
-  value: string;
-  status: ClaimStatus;
-  sourceIds: string[];
-  confidence: number | null;
-  detail: string;
-};
-
-export type ModelRunProvenance = {
-  provider: "freellmapi" | "production";
-  model: string;
-  profile: string;
-  routedVia?: string;
-  completedAt: string;
-  mode: "public" | "sensitive";
-};
-
-export type DiligenceRun = {
-  id: string;
-  createdAt: string;
-  status: "ready_for_human_review" | "blocked" | "degraded";
-  recommendation: string;
-  memo: string;
-  risks: RiskItem[];
-  requests: string[];
-  claims: DiligenceClaim[];
-  sources: SourceRecord[];
-  modelRun?: ModelRunProvenance;
-  providerNotice?: string;
 };
 
 export type MetroProfile = {

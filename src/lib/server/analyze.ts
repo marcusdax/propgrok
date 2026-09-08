@@ -3,7 +3,6 @@ import { z } from "zod";
 import { buildDossier } from "@/lib/engine";
 import type { Amenity, Dossier, NeighborhoodIntel, OnePager, PropertyPin } from "@/lib/types";
 import { formatMiles } from "@/lib/utils";
-import { aiProvider } from "@/lib/server/ai-provider";
 
 const isK12School = (kind: string) => /^(school|kindergarten)$/i.test(kind);
 const isEducation = (kind: string) => /^(school|kindergarten|university)$/i.test(kind);
@@ -87,16 +86,40 @@ function pinSchema(p: PropertyPin): PropertyPin {
     .parse(p);
 }
 
-async function modelJson(system: string, user: string, maxTokens = 1400): Promise<Record<string, unknown> | null> {
-  const result = await aiProvider.runStructured({
-    mode: "public",
-    profile: "smart",
-    system,
-    prompt: user,
-    maxTokens,
-    schema: z.record(z.string(), z.unknown()),
+async function grokJson(system: string, user: string, maxTokens = 1400): Promise<Record<string, unknown> | null> {
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) return null;
+  const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "grok-4.5",
+      temperature: 0.3,
+      max_tokens: maxTokens,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
   });
-  return result.ok ? result.value : null;
+  if (!res.ok) return null;
+  const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const text = body.choices?.[0]?.message?.content ?? "";
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    try {
+      return JSON.parse(m[0]) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const analyzeProperty = createServerFn({ method: "POST" })
@@ -111,7 +134,7 @@ export const analyzeProperty = createServerFn({ method: "POST" })
       .map((a) => `${a.name} (${a.kind}, ${formatMiles(a.distanceM)})`)
       .join("; ");
 
-    const json = await modelJson(
+    const json = await grokJson(
       "You are PropertyInsight, a real-estate and renovation strategist for ODASI / VIVELLA. Return JSON only. Be numeric, cited, and conservative. Never invent a specific sold-comp address you cannot know; speak in ranges and neighborhood patterns. Keys: thesis (string), narrative (string, 90-140 words), occupancyNote (string), schoolsNote (string), laborNote (string), zoningNote (string), extraRisks (array of {label, severity: low|moderate|high|critical, detail}), playNotes (object mapping feature id to a 1-sentence local note).",
       `Parcel: ${data.pin.label}
 Coords: ${data.pin.lat}, ${data.pin.lng}
@@ -145,11 +168,11 @@ Nearby: ${nearby || "none returned"}`,
       dossier.enriched = true;
       dossier.evidence.sources.push({
         sourceType: "llm",
-        sourceId: "routed-model",
+        sourceId: "grok-4.5",
         timestamp: new Date().toISOString(),
         meta: { role: "narrative overlay" },
       });
-      dossier.evidence.modelVersions.narrative = { version: "ai-provider/smart" };
+      dossier.evidence.modelVersions.narrative = { version: "grok-4.5" };
     }
 
     return { ok: true as const, dossier };
@@ -274,7 +297,7 @@ export const analyzeNeighborhood = createServerFn({ method: "POST" })
       enriched: false,
     };
 
-    const json = await modelJson(
+    const json = await grokJson(
       "You are a spatial demographer. JSON keys: summary (90-130 words), schoolsNote, laborNote, zoningNote, trend (40-70 words). Be honest about uncertainty. No fake school ratings.",
       `Location ${data.pin.label} (${data.pin.lat}, ${data.pin.lng}). POI clusters: ${JSON.stringify(clusters)}. WalkScore proxy ${walkScore}.`,
       900,
@@ -307,7 +330,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
         cta: "Book a 15-minute site check",
       }));
 
-    const json = await modelJson(
+    const json = await grokJson(
       "Return JSON { items: [{ address, headline, summary, cta }] } — one item per address. Headlines under 10 words, no emoji, contractor-credible.",
       `Industry: ${data.industry}. Neighborhood: ${data.neighborhood}. Addresses:\n${data.pins.map((p) => p.label).join("\n")}`,
       1200,
