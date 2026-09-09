@@ -499,6 +499,40 @@ export function NeighborhoodPanel({ intel, loading }: { intel: NeighborhoodIntel
           </CardContent>
         </Card>
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Rent signals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {intel.rentSignals.map((signal) => (
+              <div key={signal.label}>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span>{signal.label}</span>
+                  <span className="tabular text-primary">{signal.value}</span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{signal.detail}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Investment signals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {intel.investmentSignals.map((signal) => (
+              <div key={signal.label}>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span>{signal.label}</span>
+                  <span className="tabular text-primary">{signal.value}</span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{signal.detail}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
       <Card>
         <CardContent className="space-y-3 pt-4 text-sm">
           <p className="text-muted-foreground">{intel.laborNote}</p>

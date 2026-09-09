@@ -183,6 +183,18 @@ export type NeighborhoodIntel = {
   } | null;
   demographicHighlights: { label: string; value: string; detail: string }[];
   marketSignals: { label: string; value: string; detail: string }[];
+  rentSignals: {
+    type:
+      | "rent_estimate"
+      | "sale_estimate"
+      | "vacancy_estimate"
+      | "days_on_market"
+      | "price_per_sqft";
+    label: string;
+    value: string;
+    detail: string;
+  }[];
+  investmentSignals: { label: string; value: string; detail: string }[];
   dataGaps: string[];
   investorRead: string;
   schoolsNote: string;
